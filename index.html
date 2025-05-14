@@ -4,50 +4,66 @@
   <meta charset="UTF-8">
   <title>Live Leaderboard</title>
   <style>
-    body { font-family: sans-serif; background: rgba(0,0,0,0.5); color: white; }
-    table { border-collapse: collapse; margin: 0; }
-    th, td { padding: 4px 8px; }
+    body { font-family: sans-serif; background: rgba(0,0,0,0.5); color: #fff; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 4px 8px; text-align: left; }
     th { background: #333; }
     tr:nth-child(even) { background: rgba(255,255,255,0.1); }
   </style>
 </head>
 <body>
   <h3>Live Leaderboard</h3>
-  <table id="lb"><tr><th>User</th><th>Votes</th></tr></table>
+  <table id="lb">
+    <tr><th>User</th><th>Votes</th></tr>
+  </table>
 
   <script>
-    // Your published-to-web CSV URL (make sure it's the CSV link, not the sheet UI link)
-    const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQFIkiha46dsmYyOFZElLATgp3kgFnuAjXQyFGzh_IV1ZH2s3T211__gfM2RpGC51jTb4sPBCF2CUFJ/pub?gid=1469374722&single=true&output=csv';
+    // ▶️ Fill in your published-to-web CSV link here:
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQFIkiha46dsmYyOFZElLATgp3kgFnuAjXQyFGzh_IV1ZH2s3T211__gfM2RpGC51jTb4sPBCF2CUFJ/pub?gid=1469374722&single=true&output=csv';
+
+    // Clean‐render empty leaderboard
+    function renderEmpty() {
+      document.getElementById('lb').innerHTML =
+        '<tr><th>User</th><th>Votes</th></tr>';
+    }
 
     async function draw() {
       try {
-        // Cache-buster to force fresh fetch every time
-        const url = baseUrl + '?cache=' + new Date().getTime();
-        const res = await fetch(url);
-        const txt = await res.text();
-        const lines = txt.trim().split('\\n');
+        // Cache-buster so browser always fetches fresh
+        const url = CSV_URL + '&cache=' + Date.now();
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const txt = await resp.text();
+        const lines = txt.trim().split(/\r?\n/);
 
-        // If no data rows, leave the header only
         if (lines.length < 2) {
-          document.getElementById('lb').innerHTML = '<tr><th>User</th><th>Votes</th></tr>';
-          return;
+          console.warn('No data rows found in CSV');
+          return renderEmpty();
         }
 
-        // Build table: first line is header, skip it
+        // Build HTML table rows
         let html = '<tr><th>User</th><th>Votes</th></tr>';
-        lines.slice(1).forEach(line => {
-          const [user, votes] = line.split(',');
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;                // skip blank lines
+          const cols = line.split(',');
+          if (cols.length < 2) {
+            console.warn('Skipping malformed line:', line);
+            continue;
+          }
+          const user = cols[0];
+          const votes = cols[1];
           html += `<tr><td>${user}</td><td>${votes}</td></tr>`;
-        });
+        }
 
-        // Inject into DOM
         document.getElementById('lb').innerHTML = html;
       } catch (err) {
-        console.error('Leaderboard fetch error', err);
+        console.error('Failed to update leaderboard:', err);
+        renderEmpty();
       }
     }
 
-    // Initial draw and then every 5 seconds
+    // Initial draw + update every 5s
     draw();
     setInterval(draw, 5000);
   </script>
