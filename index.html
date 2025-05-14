@@ -1,14 +1,55 @@
-<!DOCTYPE html><html><body>
-<h3>Live Leaderboard</h3><table id="lb" border="1"></table>
-<script>
-const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQFIkiha46dsmYyOFZElLATgp3kgFnuAjXQyFGzh_IV1ZH2s3T211__gfM2RpGC51jTb4sPBCF2CUFJ/pub?gid=1469374722&single=true&output=csv';
-async function draw() {
-  const res = await fetch(url);
-  const txt = await res.text();
-  const rows = txt.trim().split('\n').slice(1);
-  let html = '<tr><th>User</th><th>Votes</th></tr>';
-  rows.forEach(r=>{const [u,v]=r.split(','); html+=`<tr><td>${u}</td><td>${v}</td></tr>`;});
-  document.getElementById('lb').innerHTML = html;
-}
-setInterval(draw,5000); draw();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Leaderboard</title>
+  <style>
+    body { font-family: sans-serif; background: rgba(0,0,0,0.5); color: white; }
+    table { border-collapse: collapse; margin: 0; }
+    th, td { padding: 4px 8px; }
+    th { background: #333; }
+    tr:nth-child(even) { background: rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body>
+  <h3>Live Leaderboard</h3>
+  <table id="lb"><tr><th>User</th><th>Votes</th></tr></table>
+
+  <script>
+    // Your published-to-web CSV URL (make sure it's the CSV link, not the sheet UI link)
+    const baseUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQFIkiha46dsmYyOFZElLATgp3kgFnuAjXQyFGzh_IV1ZH2s3T211__gfM2RpGC51jTb4sPBCF2CUFJ/pub?gid=1469374722&single=true&output=csv';
+
+    async function draw() {
+      try {
+        // Cache-buster to force fresh fetch every time
+        const url = baseUrl + '?cache=' + new Date().getTime();
+        const res = await fetch(url);
+        const txt = await res.text();
+        const lines = txt.trim().split('\\n');
+
+        // If no data rows, leave the header only
+        if (lines.length < 2) {
+          document.getElementById('lb').innerHTML = '<tr><th>User</th><th>Votes</th></tr>';
+          return;
+        }
+
+        // Build table: first line is header, skip it
+        let html = '<tr><th>User</th><th>Votes</th></tr>';
+        lines.slice(1).forEach(line => {
+          const [user, votes] = line.split(',');
+          html += `<tr><td>${user}</td><td>${votes}</td></tr>`;
+        });
+
+        // Inject into DOM
+        document.getElementById('lb').innerHTML = html;
+      } catch (err) {
+        console.error('Leaderboard fetch error', err);
+      }
+    }
+
+    // Initial draw and then every 5 seconds
+    draw();
+    setInterval(draw, 5000);
+  </script>
+</body>
+</html>
