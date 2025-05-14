@@ -1,7 +1,7 @@
 <!DOCTYPE html><html><body>
 <h3>Live Leaderboard</h3><table id="lb" border="1"></table>
 <script>
-const url = 'CSV_URL';
+const url = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQFIkiha46dsmYyOFZElLATgp3kgFnuAjXQyFGzh_IV1ZH2s3T211__gfM2RpGC51jTb4sPBCF2CUFJ/pub?gid=1469374722&single=true&output=csv';
 async function draw() {
   const res = await fetch(url);
   const txt = await res.text();
