@@ -1,0 +1,14 @@
+<!DOCTYPE html><html><body>
+<h3>Live Leaderboard</h3><table id="lb" border="1"></table>
+<script>
+const url = 'CSV_URL';
+async function draw() {
+  const res = await fetch(url);
+  const txt = await res.text();
+  const rows = txt.trim().split('\n').slice(1);
+  let html = '<tr><th>User</th><th>Votes</th></tr>';
+  rows.forEach(r=>{const [u,v]=r.split(','); html+=`<tr><td>${u}</td><td>${v}</td></tr>`;});
+  document.getElementById('lb').innerHTML = html;
+}
+setInterval(draw,5000); draw();
+</script></body></html>
